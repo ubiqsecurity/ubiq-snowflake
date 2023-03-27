@@ -1,0 +1,8 @@
+{
+    "host": "<hostname>",
+    "port": 6380,
+    "db": 0,
+    "password": "<password>",
+    "ssl": true,
+    "decode_responses": true
+}
