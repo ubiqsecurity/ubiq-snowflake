@@ -93,7 +93,7 @@ $$;
 
 
 -- Creates Cache with unwrapped keys; no Secret Crypto Key needed for enc/dec fpe cache functions.
-create or replace procedure ubiq_begin_fpe_session("ffs_name", "access_key", "secret_signing_key", "secret_crypto_access_key")
+create or replace procedure ubiq_begin_fpe_session("ffs_name" varchar, "access_key" varchar, "secret_signing_key" varchar, "secret_crypto_access_key" varchar)
 returns varchar
 language javascript
 as
