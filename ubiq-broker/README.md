@@ -130,6 +130,10 @@ create or replace external function _ubiq_broker_fetch_ffs_and_fpe_key(ffs_name 
     returns variant
     api_integration = ubiq_broker_int
     as '[Ubiq broker base URL]/fetch_ffs_and_fpe_key';
+create or replace external function _ubiq_broker_submit_events(events variant, access_key_id varchar, secret_signing_key varchar)
+    returns variant
+    api_integration = ubiq_broker_int
+    as '[Ubiq broker base URL]/submit_events';
 
 ```
 
