@@ -116,3 +116,74 @@ $$
         return "Failed: " + err;
     }
 $$;
+
+-- Requires Access Key and Signing Key to authenticate with Ubiq Servers.
+CREATE OR REPLACE PROCEDURE UBIQ_CLOSE_FPE_SESSION("ACCESS_KEY" VARCHAR, "SECRET_SIGNING_KEY" VARCHAR)
+RETURNS variant
+LANGUAGE JAVASCRIPT
+execute as caller
+AS
+$$
+    var sql = `
+        SELECT 
+        query_id, start_time, end_time, warehouse_size
+        FROM TABLE(information_schema.query_history())
+        WHERE (QUERY_TEXT LIKE '%ubiq_fpe_encrypt%' OR QUERY_TEXT LIKE '%ubiq_fpe_decrypt%')
+        AND QUERY_TEXT NOT LIKE '%query_history%' -- exclude current query
+        AND QUERY_TYPE='SELECT'
+        ORDER BY start_time DESC`;
+    var cols = ['query_id', 'start_time', 'end_time', 'warehouse_size'];
+    var queries = [];
+    try {
+        var db = snowflake.execute({ sqlText: sql });
+        while (db.next()) {
+            var row = {};
+            for (var col_num = 0; col_num < cols.length; col_num = col_num + 1) {
+                row[cols[col_num]] = db.getColumnValue(col_num + 1);
+            }
+            queries.push(row);
+        }
+        // return queries;
+    }
+    catch (err) {
+        return "Failed: " + err;
+    }
+    var res = []
+    queries.forEach(query => {
+        try {
+            var querySql = `
+                SELECT
+                    OPERATOR_STATISTICS:extension_functions.total_python_udf_handler_invocations,
+                    OPERATOR_STATISTICS:extension_functions.total_python_udf_handler_execution_time
+                FROM 
+                    TABLE(get_query_operator_stats('${query.query_id}'))
+                WHERE OPERATOR_TYPE = 'ExtensionFunction'
+            `;
+            var db2 = snowflake.execute({ sqlText: querySql });
+            var executionCount = 0;
+            var executionTime = 0;
+            while (db2.next()) {
+                executionCount = executionCount + db2.getColumnValue(1);
+                executionTime = executionTime + db2.getColumnValue(2);
+            }
+            res.push({
+                ...query,
+                executionCount,
+                executionTime
+            });
+        } catch (err) {
+            res.push("Failed: " + err);
+        }
+    })
+    // Call _ubiq_broker_submit_billing with res payload.
+    snowflake.execute({
+    sqlText: `SELECT _ubiq_broker_submit_events(
+        PARSE_JSON('${JSON.stringify(res)}'),
+        '${ACCESS_KEY}', 
+        '${SECRET_SIGNING_KEY}'
+    )`})
+
+    // Drop the FFS cache
+    snowflake.execute({sqlText: `DROP TABLE IF EXISTS ubiq_ffs_cache;`});
+    return res;
+$$;
