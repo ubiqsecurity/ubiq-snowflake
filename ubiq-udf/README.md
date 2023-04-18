@@ -24,7 +24,7 @@ Snowflake will keep older versions around and it is hard to tell which version o
 
 ### Deployment
 To deploy the Snowflake Ubiq UDFs, run the following command (replace "\\" with "^" if running on Windows):
-```
+```shell
 python deploy_udfs.py \
     --account="..." \
     --user="..." \
@@ -43,7 +43,7 @@ Arguments are defined as follows:
 * _schema:_ name of the schema in which to create Ubiq UDFs
 
 Below is an example invocation of the UDF deployment script using dummy values(replace "\\" with "^" if running on Windows):
-```
+```shell
 python deploy_udfs.py \
     --account=pozvoni-dt53742 \
     --user=testuser \
@@ -53,77 +53,41 @@ python deploy_udfs.py \
     --schema=UBIQ
 ```
 
-If the user has multiple roles, you will need to adjust the deployment .py to include a role as appropriate
+If the user has multiple roles, you will need to adjust the `deployment.py` to include a role as appropriate
 
 ### Requirements
 - Python 3.8
 
 ## Usage
-All Ubiq functions take as input the Ubiq secret crypto access key and the encrypted private key, along with other attributes returned from the respective Ubiq API endpoint. Encrypt functions expect plain text while decrypt functions expect encrypted data, which is binary data for standard decryption or cipher text for Format Preserving Encryption (FPE) decryption.  Additionally, FPE functions expect the Field Format Specification (FFS). Examples of each encrypt/decrypt UDF is provided below. They assume that functions were created in the "ubiq" schema and are executing within the context of the database to which the UDFs were deployed.
+All Ubiq functions take as input the Ubiq secret crypto access key and the encrypted private key, along with other attributes returned from the respective Ubiq API endpoint. Encrypt functions expect plain text while decrypt functions expect encrypted data, which is binary data for standard decryption or cipher text for Format Preserving Encryption (FPE) decryption.  Additionally, FPE functions expect the Dataset names. Examples of each encrypt/decrypt UDF is provided below. They assume that functions were created in the "ubiq" schema and are executing within the context of the database to which the UDFs were deployed.
 
-### Standard Encryption
-The below command performs standard (i.e. non-FPE) encryption by calling the Ubiq API to get an encryption key. It assumes that the access key ID and secret signing key are stored in a table called ubiq_creds with column names access_key_id and secret_signing_key_id respectively.
-```
-select ubiq.ubiq_encrypt(
-    plain_text
+### Format Preserving Encryption (FPE) Setup
+Before running encryption/decryption operations, the database session will need to be initialized. This is done by calling the following procedure:
+```sql
+CALL ubiq.ubiq_begin_fpe_session(
+    dataset_names, 
+    access_key,
+    secret_signing_key,
+    secret_crypto_access_key
 )
-from table
-```
-
-The below command calls the Python encryption function directly; it expects that the encryption key is cached locally and provided as arguments to the function.
-```
-select ubiq._ubiq_python_encrypt(
-    plain_text,
-    'secret crypto access key',
-    {
-        'encrypted_private_key': '...',
-        'key_fingerprint': '...',
-        'encryption_session': '...',
-        'security_model': '...',
-        'max_uses': 1,
-        'wrapped_data_key': '...',
-        'encrypted_data_key': '...'
-    }
-)
-from table
 ```
 
-### Standard Decryption
-The below command performs standard (i.e. non-FPE) decryption by calling the Ubiq API to get an encryption key. It assumes that the access key ID and secret signing key are stored in a table called ubiq_creds with column names access_key_id and secret_signing_key_id respectively.
-```
-select ubiq.ubiq_decrypt(
-    encrypted_byte_array
-)
-from table
-```
-
-The below command calls the Python decryption function directly; it expects that the encryption key is cached locally and provided as arguments to the function.
-```
-select ubiq._ubiq_python_encrypt(
-    encrypted_byte_array,
-    'secret crypto access key',
-    {
-        'encrypted_private_key': '...',
-        'key_fingerprint': '...',
-        'encryption_session': '...',
-        'wrapped_data_key': '...'
-    }
-)
-from table
-```
+Arguments are defined as follows:
+* _dataset_names:_ The datasets to use FPE encryption with. Datasets should be accessible by the API Key. These should be in a single string, separated by commas. eg `'SSN,TELEPHONE_NUMBER,FULL_NAME'` 
+* _access_key, secret_signing_key, secret_crypto_access_key:_ Ubiq API Key Credentials available from the Ubiq Dashboard
 
 ### FPE Encryption
-The below command performs FPE encryption by calling the Ubiq API to get FFS metadata corresponding to the given FFS name (e.g., 'SSN') and an FPE encryption key. It assumes that the access key ID and secret signing key are stored in a table called ubiq_creds with column names access_key_id and secret_signing_key_id respectively.
-```
-select ubiq.ubiq_fpe_encrypt(
+The below command performs FPE encryption by calling the Ubiq API to get Dataset metadata corresponding to the given Dataset name (e.g., 'SSN') and an FPE encryption key.
+```sql
+select ubiq.ubiq_fpe_encrypt_cache(
     plain_text, 
-    ffs_name
+    dataset_name
 )
 from table
 ```
 
-The below command calls the Python FPE encryption function directly; it expects that the encryption key and FFS metadata are cached locally and provided as arguments to the function.
-```
+The below command calls the Python FPE encryption function directly; it expects that the encryption key and Dataset metadata are cached locally and provided as arguments to the function.
+```sql
 select ubiq._ubiq_python_fpe_encrypt(    
     plain_text,
     'secret crypto access key',
@@ -148,17 +112,17 @@ from table
 ```
 
 ### FPE Decryption
-The below command performs FPE decryption by calling the Ubiq API to get FFS metadata corresponding to the given FFS name (e.g., 'SSN') and an FPE encryption key. It assumes that the access key ID and secret signing key are stored in a table called ubiq_creds with column names access_key_id and secret_signing_key_id respectively.
-```
-select ubiq.ubiq_fpe_decrypt(
+The below command performs FPE decryption by calling the Ubiq API to get Dataset metadata corresponding to the given Dataset name (e.g., 'SSN') and an FPE encryption key. 
+```sql
+select ubiq.ubiq_fpe_decrypt_cache(
     cipher_text, 
-    ffs_name
+    dataset_name
 )
 from table
 ```
 
-The below command calls the Python FPE decryption function directly; it expects that the encryption key and FFS metadata are cached locally and provided as arguments to the function.
-```
+The below command calls the Python FPE decryption function directly; it expects that the encryption key and Dataset metadata are cached locally and provided as arguments to the function.
+```sql
 select ubiq._ubiq_python_fpe_decrypt(
     cipher_text,
     'secret crypto access key',
@@ -182,36 +146,16 @@ select ubiq._ubiq_python_fpe_decrypt(
 from table
 ```
 
-## Usage Example for single-use format preserving encryption
-
-```
-----------------------------------------------------------------------------------------
-----------------------------------------------------------------------------------------
--- sample encrypt/decrypt using format-preserving encryption of an SSN
---
--- this assumes that you
---      1) have credentials loaded in the ubiq_creds table
---      2) that those api credentials have access to a structured dataset called "SSN"
---      2) that the structured dataset called "SSN" has an input character set of [0-9]
---         and an output character set of [0-9a-zA-Z]
---
--- this example will not use any key caching between each query, so configuration
--- and data keys will be exchanged with the api backend during each encrypt
--- or decrypt udf call.  it will not perform well with large datasets
-----------------------------------------------------------------------------------------
-----------------------------------------------------------------------------------------
-
-
--- encrypt a sample SSN
-set plaintext = '041-04-1234';
-set ciphertext = ubiq_fpe_encrypt($plaintext, 'SSN');
-
--- decrypt inline
-select $plaintext, $ciphertext, ubiq_fpe_decrypt($ciphertext, 'SSN');
+### Ending the Ubiq Session
+After encrypting/decrypting, you will need to call this function. This will guarantee the environment has been cleaned up and report usage information.
+```sql
+call ubiq.ubiq_close_fpe_session(
+    access_key, 
+    secret_signing_key
+)
 ```
 
-
-## Usage Example for valume-use format preserving encryption
+## Usage Example for High Volume-use Format Preserving Encryption
 
 ```
 ----------------------------------------------------------------------------------------
@@ -219,8 +163,7 @@ select $plaintext, $ciphertext, ubiq_fpe_decrypt($ciphertext, 'SSN');
 -- sample encrypt/decrypt using format-preserving encryption of an SSN for high volume
 --
 -- this assumes that you
---      1) have credentials loaded in the ubiq_creds table
---      2) that those api credentials have access to a structured dataset called "SSN"
+--      1) have credentials with access to a structured dataset called "SSN"
 --      2) that the structured dataset called "SSN" has an input character set of [0-9]
 --         and an output character set of [0-9a-zA-Z] and passthrough character of 
 --         at least a dash [-]
@@ -232,11 +175,16 @@ select $plaintext, $ciphertext, ubiq_fpe_decrypt($ciphertext, 'SSN');
 
 
 -- warm up configuration and key cache
-call ubiq_begin_fpe_session('SSN');
+call ubiq_begin_fpe_session('SSN', access_key, secret_signing_key, secret_crypto_access_key);
 
 select * from sample_ssns
 
 -- update column in table
 update sample_ssns set ssn_encrypted = ubiq_fpe_encrypt_cache(ssn_plaintext, 'SSN');
 update sample_ssns set ssn_decrypted = ubiq_fpe_decrypt_cache(ssn_encrypted, 'SSN');
+
+-- query data from table
+select id, ubiq_fpe_decrypt_cache(ssn_encrypted, 'SSN') from sample_ssns;
+
+call ubiq_close_fpe_session(access_key, secret_signing_key);
 ```
