@@ -3,7 +3,7 @@ The Ubiq Security Snowflake library provides a convenient interaction with the U
 
 This repository contains Snowflake user-defined functions (UDFs) that wrap the Ubiq Python library to enable UDF-based encryption and decryption operations within Snowflake data platform. UDFs are defined and deployed using the Snowpark library, a Snowflake client API for interacting with Snowflake and defining/deploying Snowflake objects.
 
-> **Note**: The Snowflake library is currently only supported for Azure-hosted Snowflake environments.  If you are running Snowflake on AWS or GCP, please contact [Ubiq Support](mailto:support@ubiqsecurity.com).
+> **Note**: The Snowflake library is currently only supported for Azure- and AWS-hosted Snowflake environments.  If you are running Snowflake on GCP, please contact [Ubiq Support](mailto:support@ubiqsecurity.com).
 
 ## Configuration
 ### Previous Versions
@@ -70,9 +70,13 @@ If the user has multiple roles, you will need to adjust the `deployment.py` to i
 
 You will need to run all of the statements listed in both [`initialize_ubiq_external_functions.sql`](/initialize_external_ubiq_functions.sql) and [`ubiq_functions.sql`](/ubiq_functions.sql).
 
-> **Note**: For Azure-hosted Snowflake environments, a mutual consent between Azure and your Snowflake tenant needs to be granted.  Please contact [Ubiq Support](mailto:support@ubiqsecurity.com) to provide environmental information to produce the consent link and to grant Azure consent.
+> **Note**: For **Azure-hosted** Snowflake environments, a mutual consent between Azure and your Snowflake tenant needs to be granted.  Please contact [Ubiq Support](mailto:support@ubiqsecurity.com) to provide environmental information to produce the consent link and to grant Azure consent.
 >
 >Ubiq will provide you with a tenant id, application id, and broker URL to use during set up.
+
+> **Note**: For **AWS-hosted** Snowflake environments, a mutual consent between AWS  and your Snowflake tenant needs to be granted.  Please contact [Ubiq Support](mailto:support@ubiqsecurity.com) to provide environmental information.
+>
+>Ubiq will provide you with a `api_aws_role_arn` and broker URL to use during setup. You will need to provide the `API_AWS_IAM_USER_ARN` and `API_AWS_EXTERNAL_ID`` given by Snowflake to be authorized to use the external (broker) functions.
 
 [`initialize_ubiq_external_functions.sql`](/initialize_external_ubiq_functions.sql)  - Creates the external (broker) functions needed for Snowflake to communicate with Ubiq. These perform the following functions:
 
