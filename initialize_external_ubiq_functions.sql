@@ -1,4 +1,6 @@
 -- Create the Broker Integration
+
+-- AZURE VERSION
 -- Get tenant id, application id, and prefixes from Ubiq
 create or replace api integration ubiq_broker_int
     api_provider = azure_api_management
@@ -7,7 +9,17 @@ create or replace api integration ubiq_broker_int
     api_allowed_prefixes = ('{Gateway URL}')
     enabled = true;
 
--- In a Snowflake worksheet, run the below command, click onc the URL within the _AZURE\_CONSENT\_URL_ field, and click _Accept_ to grant Snowflake access to the Azure tenancy
+-- AWS VERSION
+-- Get api_aws_role_arn and api_allowed_prefixes from Ubiq
+create or replace api integration ubiq_broker_int
+    api_provider=aws_api_gateway
+    api_aws_role_arn='...'
+    api_allowed_prefixes=('{Gateway URL}')
+    enabled=true;
+
+-- In a Snowflake worksheet, run the below command, 
+-- AZURE: Click on the URL within the _AZURE\_CONSENT\_URL_ field, and click _Accept_ to grant Snowflake access to the Azure tenancy.
+-- AWS: Provide API_AWS_IAM_USER_ARN and API_AWS_EXTERNAL_ID to Ubiq. These will be needed to grant you access.
 describe api integration ubiq_broker_int;
 
 -- Create the external functions
