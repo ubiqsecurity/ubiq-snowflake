@@ -1,8 +1,10 @@
 #!/bin/bash
 
-read -p "AWS Profile Name (default: none): " aws_profile
+read -p "AWS Profile Name (default: default): " aws_profile
+aws_profile=${aws_profile:-default}
 
 aws_region=$(eval "aws configure get region")
+aws_profile=${aws_profile:-"us-west-2"}
 
 read -p "Lambda Execution Role? (arn:aws:iam...) " aws_role
 
@@ -22,10 +24,10 @@ else
 fi
 sleep 1
 echo "folder created"
-# mkdir package
+
 # install cryptography separately because platforms
-pip3 install --target $package_dir --platform manylinux_2_12_x86_64 --implementation cp --python 3.10 --only-binary=:all: --upgrade cryptography
-pip3 install --target $package_dir -r requirements.txt --platform manylinux_2_12_x86_64 --implementation cp --python 3.10 --only-binary=:all:
+pip install --target $package_dir --platform manylinux_2_12_x86_64 --implementation cp --python 3.10 --only-binary=:all: --upgrade cryptography
+pip install --target $package_dir -r requirements.txt --platform manylinux_2_12_x86_64 --implementation cp --python 3.10 --only-binary=:all:
 
 broker_fns=("fetch_ffs" "fetch_fpe_key" "fetch_ffs_and_fpe_key" "submit_events")
 
@@ -33,17 +35,24 @@ for fn in "${broker_fns[@]}"
 do
     # create archive and upload function
     (cd $package_dir; zip -r ../${fn}_deploy.zip .)
-    (cd fetch_ffs; zip -r ../${fn}_deploy.zip .)
-    zip -r ${fn}_deploy.zip common
+    (cd $fn; zip -r ../${fn}_deploy.zip .)
+    zip -r $fn_deploy.zip common
 
     # Check if function exists
-    aws_fn_exist=$(eval "aws lambda get-function --function-name ${fn} ${aws_region:+"--region ${aws_region}"} ${aws_profile:+"--profile ${aws_profile}"}")
-    if [ -z ${aws_fn_exist+x} ]; then
-        echo "Creating function ${fn}"
-        eval "aws lambda create-function --function-name ${fn} --zip-file fileb://${fn}_deploy.zip ${aws_region:+"--region ${aws_region}"} ${aws_profile:+"--profile ${aws_profile}"} --role $aws_role --runtime 'python3.10' --handler 'lambda_function.lambda_handler'"
-    else
+    aws lambda get-function --function-name $fn --region $aws_region --profile $aws_profile > /dev/null 2>&1
+    if [ 0 -eq $? ]; then
+        echo $?
         echo "Updating function ${fn}"
-        eval "aws lambda update-function-code --function-name ${fn} --zip-file fileb://${fn}_deploy.zip ${aws_region:+"--region ${aws_region}"} ${aws_profile:+"--profile ${aws_profile}"}"
+        aws lambda update-function-code --function-name $fn --zip-file fileb://$fn_deploy.zip --region $aws_region --profile $aws_profile
+    else
+        echo $?
+        if [ -z "$aws_role" ]; then
+            echo "Lambda execution role is required for creating lambda functions"
+            exit 1
+        else 
+            echo "Creating function ${fn}"
+            aws lambda create-function --function-name $fn --zip-file fileb://$fn_deploy.zip --region $aws_region --profile $aws_profile --role $aws_role --runtime 'python3.10' --handler 'lambda_function.lambda_handler'
+        fi
     fi
 done
 
