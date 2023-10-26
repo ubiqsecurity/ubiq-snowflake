@@ -1,5 +1,6 @@
 import fire
 import pandas as pd
+from typing import Iterable, Tuple
 from snowflake.snowpark import Session
 from snowflake.snowpark.types import PandasDataFrame, PandasSeries
 from snowflake.snowpark.functions import pandas_udf
@@ -54,9 +55,9 @@ def deploy_functions(
 
     # Register data key decryption function on Snowflake
     session.udf.register(
-        ubiq_python_fetch_data_key, 
-        name="_ubiq_python_fetch_data_key", 
-        session=session, 
+        ubiq_fetch_data_key,
+        name="_ubiq_fetch_data_key",
+        session=session,
         packages=["cryptography"],
         is_permanent=True,
         stage_location=stage,
@@ -66,8 +67,8 @@ def deploy_functions(
     # Register standard/FPE encryption and decryption user-defined functions
     # (UDFs) on Snowflake
     session.udf.register(
-        ubiq_python_fpe_encrypt,
-        name="_ubiq_python_fpe_encrypt",
+        ubiq_encrypt,
+        name="_ubiq_encrypt",
         session=session,
         packages=["cryptography"],
         is_permanent=True,
@@ -75,26 +76,26 @@ def deploy_functions(
         replace=True,
     )
     session.udf.register(
-        ubiq_python_fpe_decrypt,
-        name="_ubiq_python_fpe_decrypt",
+        ubiq_encrypt_for_search,
+        name="_ubiq_encrypt_for_search_array",
         session=session,
         packages=["cryptography"],
         is_permanent=True,
         stage_location=stage,
         replace=True,
     )
-    session.udf.register(
-        ubiq_python_fpe_encrypt_cache,
-        name="_ubiq_python_fpe_encrypt_cache",
-        session=session,
-        packages=["cryptography"],
+    session.udtf.register(
+        EncryptForSearch,
+        ["encrypted_data"],
+        name="_ubiq_encrypt_for_search_table",
         is_permanent=True,
-        stage_location=stage,
         replace=True,
+        stage_location=stage,
+        packages=["cryptography"]
     )
     session.udf.register(
-        ubiq_python_fpe_decrypt_cache,
-        name="_ubiq_python_fpe_decrypt_cache",
+        ubiq_decrypt,
+        name="_ubiq_decrypt",
         session=session,
         packages=["cryptography"],
         is_permanent=True,
@@ -104,8 +105,8 @@ def deploy_functions(
 
     # Used pandas_udf function to deploy as vectorized function
     pandas_udf(
-        ubiq_python_fpe_encrypt_cache_batch,
-        name="_ubiq_python_fpe_encrypt_cache_batch",
+        ubiq_encrypt_batch,
+        name="_ubiq_encrypt_batch",
         session=session,
         packages=["cryptography"],
         is_permanent=True,
@@ -114,8 +115,8 @@ def deploy_functions(
     )
     # Used pandas_udf function to deploy as vectorized function
     pandas_udf(
-        ubiq_python_fpe_decrypt_cache_batch,
-        name="_ubiq_python_fpe_decrypt_cache_batch",
+        ubiq_decrypt_batch,
+        name="_ubiq_decrypt_batch",
         session=session,
         packages=["cryptography"],
         is_permanent=True,
@@ -124,74 +125,83 @@ def deploy_functions(
     )
 
 
-def ubiq_python_fetch_data_key(
+def ubiq_fetch_data_key(
     ffs_name: str, secret_crypto_access_key: str, ubiq_ffs_key_cache: Dict
 ) -> Dict:
     """ """
-    ubiq_ffs_key_cache[ffs_name]["keys"] = [
-        ubiqfpe.common.fetchKey(
-            {
-                "encrypted_private_key": ubiq_ffs_key_cache[ffs_name][
-                    "encrypted_private_key"
-                ],
-                "wrapped_data_key": encrypted_key,
-            },
-            secret_crypto_access_key,
-        )
-        for encrypted_key in ubiq_ffs_key_cache[ffs_name]["keys"]
-    ]
+    dataset_names = ffs_name.split(',')
+    for name in dataset_names:
+        ubiq_ffs_key_cache[name]["keys"] = [
+            ubiqfpe.common.fetchKey(
+                {
+                    "encrypted_private_key": ubiq_ffs_key_cache[name][
+                        "encrypted_private_key"
+                    ],
+                    "wrapped_data_key": encrypted_key,
+                },
+                secret_crypto_access_key,
+            )
+            for encrypted_key in ubiq_ffs_key_cache[name]["keys"]
+        ]
 
     return ubiq_ffs_key_cache
 
+'''
+Currently Deprecated
+Users should use cache rather than passing/pulling at run time
+'''
+# def ubiq_encrypt(
+#     df: PandasDataFrame[str, str, Dict, Dict],
+# ) -> PandasSeries[str]:
+#     """
+#     Encrypts the given batch of plain text data using the Ubiq-provided key and
+#     Field Format Specification (FFS).
 
-def ubiq_python_fpe_encrypt(
-    df: PandasDataFrame[str, str, Dict, Dict],
-) -> PandasSeries[str]:
-    """
-    Encrypts the given batch of plain text data using the Ubiq-provided key and
-    Field Format Specification (FFS).
+#     Args:
+#         df: data frame containing four columns of data at the following indices:
+#             0. plain-text string data to be encrypted
+#             1. The client's secret RSA encryption key/password (used to decrypt
+#                 the client's RSA key from the server)
+#             2. Ubiq field format specification (FFS) parameters
+#             3. Ubiq format preserving encryption (FPE) endpoint response, including
+#                 Ubiq encryption key
 
-    Args:
-        df: data frame containing four columns of data at the following indices:
-            0. plain-text string data to be encrypted
-            1. The client's secret RSA encryption key/password (used to decrypt
-                the client's RSA key from the server)
-            2. Ubiq field format specification (FFS) parameters
-            3. Ubiq format preserving encryption (FPE) endpoint response, including
-                Ubiq encryption key
+#     Returns:
+#         Vector of encrypted cipher text for the given plain text strings.
+#     """
+#     return pd.Series(
+#         ubiqfpe.Encrypt(df[1].iloc[0], df[2].iloc[0], df[3].iloc[0], df[0])
+#     )
 
-    Returns:
-        Vector of encrypted cipher text for the given plain text strings.
-    """
-    return pd.Series(
-        ubiqfpe.Encrypt(df[1].iloc[0], df[2].iloc[0], df[3].iloc[0], df[0])
-    )
+'''
+Currently Deprecated
+Users should use cache rather than passing/pulling at run time
+'''
+# def ubiq_decrypt(
+#     df: PandasDataFrame[str, str, Dict, Dict],
+# ) -> PandasSeries[str]:
+#     """
+#     Decrypts the given batch of cipher text strings using the Ubiq-provided key
+#     and Field Format Specification (FFS).
+
+#     Args:
+#         df:
+#             0: cipher-text string data to be decrypted
+#             1: the client's secret RSA encryption key/password (used to decrypt
+#                 the client's RSA key from the server)
+#             2: Ubiq field format specification (FFS) parameters
+#             3: Ubiq format preserving encryption (FPE) endpoint response,
+#                 including Ubiq encryption key
+
+#     Returns:
+#         Vector of decrypted plain text for the given cipher text strings.
+#     """
+#     return pd.Series(
+#         ubiqfpe.Decrypt(df[1].iloc[0], df[2].iloc[0], df[3].iloc[0], df[0])
+#     )
 
 
-def ubiq_python_fpe_decrypt(
-    df: PandasDataFrame[str, str, Dict, Dict],
-) -> PandasSeries[str]:
-    """
-    Decrypts the given batch of cipher text strings using the Ubiq-provided key
-    and Field Format Specification (FFS).
-
-    Args:
-        df:
-            0: cipher-text string data to be decrypted
-            1: the client's secret RSA encryption key/password (used to decrypt
-                the client's RSA key from the server)
-            2: Ubiq field format specification (FFS) parameters
-            3: Ubiq format preserving encryption (FPE) endpoint response,
-                including Ubiq encryption key
-
-    Returns:
-        Vector of decrypted plain text for the given cipher text strings.
-    """
-    return pd.Series(
-        ubiqfpe.Decrypt(df[1].iloc[0], df[2].iloc[0], df[3].iloc[0], df[0])
-    )
-
-def ubiq_python_fpe_encrypt_cache(
+def ubiq_encrypt(
     plain_text: str,
     ffs_name: str,
     ubiq_ffs_key_cache: Dict,
@@ -216,7 +226,44 @@ def ubiq_python_fpe_encrypt_cache(
     )
 
 
-def ubiq_python_fpe_decrypt_cache(
+def ubiq_encrypt_for_search(
+    plain_text: str,
+    ffs_name: str,
+    ubiq_ffs_key_cache: Dict,
+) -> list:
+    """
+    Encrypts the given plain text data using a Ubiq-provided key and Field
+    Format Specification (FFS) cache dictionary of multiple FFS and possible keys.
+
+    Args:
+        plain_text: plain-text string data to be encrypted
+        secret_crypto_access_key: The client's secret RSA encryption key/password
+            (used to decrypt the client's RSA key from the server)
+        ubiq_ffs_key_cache: Ubiq field format specification (FFS) parameters and
+            Ubiq format preserving encryption (FPE) keys including Ubiq encryption
+            keys
+
+    Returns:
+        A list of encrypted cipher texts for the given plain-text string
+    """
+    return ubiqfpe.EncryptForSearchCache(
+        ffs_name, ubiq_ffs_key_cache, plain_text
+    )
+
+
+class EncryptForSearch:
+    def process(self,
+                plain_text: str,
+                ffs_name: str,
+                ubiq_ffs_key_cache: Dict) -> Iterable[Tuple[str]]:
+        res = ubiqfpe.EncryptForSearchCache(
+            ffs_name, ubiq_ffs_key_cache, plain_text
+        )
+        for encrypted in res:
+            yield (encrypted, )
+
+
+def ubiq_decrypt(
     cipher_text: str,
     ffs_name: str,
     ubiq_ffs_key_cache: Dict,
@@ -240,7 +287,8 @@ def ubiq_python_fpe_decrypt_cache(
         ffs_name, ubiq_ffs_key_cache, cipher_text
     )
 
-def ubiq_python_fpe_encrypt_cache_batch(
+
+def ubiq_encrypt_batch(
     df: PandasDataFrame[str, str, str, Dict],
 ) -> PandasSeries[str]:
     """
@@ -258,11 +306,12 @@ def ubiq_python_fpe_encrypt_cache_batch(
         Encrypted cipher text for the given plain-text string.
     """
     return pd.Series(
-        ubiqfpe.EncryptCacheBatch(df[1].iloc[0], df[2].iloc[0], df[3].iloc[0], df[0])
+        ubiqfpe.EncryptCacheBatch(
+            df[1].iloc[0], df[2].iloc[0], df[3].iloc[0], df[0])
     )
 
 
-def ubiq_python_fpe_decrypt_cache_batch(
+def ubiq_decrypt_batch(
     df: PandasDataFrame[str, str, str, Dict],
 ) -> PandasSeries[str]:
     """
@@ -281,7 +330,8 @@ def ubiq_python_fpe_decrypt_cache_batch(
         Decrypted plain-text for the given cipher text string.
     """
     return pd.Series(
-        ubiqfpe.DecryptCacheBatch(df[1].iloc[0], df[2].iloc[0], df[3].iloc[0], df[0])
+        ubiqfpe.DecryptCacheBatch(
+            df[1].iloc[0], df[2].iloc[0], df[3].iloc[0], df[0])
     )
 
 
