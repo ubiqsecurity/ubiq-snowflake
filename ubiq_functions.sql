@@ -4,33 +4,6 @@ create or replace table ubiq_creds (
     secret_crypto_access_key varchar(44)
 );
 
--- DEPRECATED
--- Use the verision that passes from ubiq_ffs_cache instead.
--- create or replace function ubiq_fpe_encrypt(plain_text varchar, ffs_name varchar)
--- returns varchar
--- as
--- $$
--- select _ubiq_encrypt(
---     plain_text,
---     (select secret_crypto_access_key from ubiq_creds),
---     (select _ubiq_broker_fetch_ffs(ffs_name, (select access_key_id from ubiq_creds), (select secret_signing_key from ubiq_creds))),
---     (select _ubiq_broker_fetch_fpe_key(ffs_name, (select access_key_id from ubiq_creds), (select secret_signing_key from ubiq_creds)))
--- )
--- $$;
-
--- DEPRECATED
--- Use the verision that passes from ubiq_ffs_cache instead.
--- create or replace function ubiq_fpe_decrypt(cipher_text varchar, ffs_name varchar)
--- returns varchar
--- as
--- $$
--- select _ubiq_decrypt(
---     cipher_text,
---     (select secret_crypto_access_key from ubiq_creds), 
---     (select _ubiq_broker_fetch_ffs(ffs_name, (select access_key_id from ubiq_creds), (select secret_signing_key from ubiq_creds))),
---     (select _ubiq_broker_fetch_fpe_key(ffs_name, (select access_key_id from ubiq_creds), (select secret_signing_key from ubiq_creds)))
--- )
--- $$;
 
 create or replace function ubiq_get_encrypt_key("cache" object)
 returns object

@@ -9,9 +9,7 @@ The broker consists of the following endpoints:
 
 * _fetch_key:_ Consumes an access key ID and secret signing key and retrieves a new encrypted private key from the Ubiq API
 * _fetch_key_from_data:_ Consumes an access key ID, secret signing key and hex-encrypted data and retrieves the corresponding encrypted private key from the Ubiq API (this is useed during decrypt operations)
-* _fetch_ffs:_ Consumes an access key ID, secret signing key and field format specification (FFS) and retrieves the corresponding FFS metadata from the Ubiq API
-* _fetch_fpe_key:_ Consumes an access key ID, secret signing key and field format specification (FFS) and retrieves the corresponding encrypted private key from the Ubiq API
-* _fetch_ffs_and_fpe_key:_ Consumes an access key ID, secret signing key and field format specification (FFS) and retrieves the corresponding metadata and encrypted private keys from the Ubiq API
+* _fetch_ffs_and_fpe_key: Consumes an access key ID, secret signing key and field format specification (FFS) and retrieves the corresponding metadata and encrypted private keys from the Ubiq API
 
 ## AWS (Lambda) Function Deployment and Configuration
 Execute the following steps to deploy the Ubiq broker function to AWS. (To be performed by a UBIQ Employee)
@@ -64,14 +62,6 @@ create or replace external function _ubiq_broker_fetch_key_from_data(encrypted_d
     returns variant
     api_integration = ubiq_broker_int
     as '[Ubiq broker base URL]/fetch_key_from_data';
-create or replace external function _ubiq_broker_fetch_ffs(ffs_name varchar, access_key_id varchar, secret_signing_key varchar)
-    returns variant
-    api_integration = ubiq_broker_int
-    as '[Ubiq broker base URL]/fetch_ffs';
-create or replace external function _ubiq_broker_fetch_fpe_key(ffs_name varchar, access_key_id varchar, secret_signing_key varchar)
-    returns variant
-    api_integration = ubiq_broker_int
-    as '[Ubiq broker base URL]/fetch_fpe_key';
 create or replace external function _ubiq_broker_fetch_ffs_and_fpe_key(ffs_name varchar, access_key_id varchar, secret_signing_key varchar)
     returns variant
     api_integration = ubiq_broker_int
