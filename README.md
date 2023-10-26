@@ -99,7 +99,7 @@ All Ubiq functions take as input the Ubiq secret crypto access key and the encry
 ### Format Preserving Encryption (FPE) Setup
 Before running encryption/decryption operations, the database session will need to be initialized. This is done by calling the following procedure:
 ```sql
-CALL ubiq_begin_fpe_session(
+CALL ubiq_begin_session(
     dataset_names, 
     access_key,
     secret_signing_key,
@@ -114,7 +114,7 @@ Arguments are defined as follows:
 ### FPE Encryption
 The below command performs FPE encryption by calling the Ubiq API to get Dataset metadata corresponding to the given Dataset name (e.g., 'SSN') and an FPE encryption key.
 ```sql
-select ubiq_fpe_encrypt_cache(
+select ubiq_encrypt(
     plain_text, 
     dataset_name
 )
@@ -124,18 +124,74 @@ from table
 ### FPE Decryption
 The below command performs FPE decryption by calling the Ubiq API to get Dataset metadata corresponding to the given Dataset name (e.g., 'SSN') and an FPE encryption key. 
 ```sql
-select ubiq_fpe_decrypt_cache(
+select ubiq_decrypt(
     cipher_text, 
     dataset_name
 )
 from table
 ```
 
+### FPE Encrypt for Search
+Encrypt For Search is a function set provided to search your database for a value that has been encrypted.
+
+#### Example
+There are two available functions:
+1. `ubiq_encrypt_for_search_array(plain_text varchar, ffs_name varchar)` - Returns an array representation, eg `['cipher text 1', 'cipher text 2', ...]`
+1. `ubiq_encrypt_for_search_table(plain_text varchar, ffs_name varchar)` - Returns a table representation with 1 column, `cipher_text`, where each row contains a separate cipher text. This is a **table function** and should be prefixed with `table()` when used in FROM and WHERE clauses.
+
+This gives you flexibility when searching to build the query that best suits your situation.
+
+
+###### Sql IN statement
+```sql
+SELECT * 
+FROM user_data 
+WHERE encrypted_data IN (
+    SELECT * 
+    FROM table(ubiq_encrypt_for_search_table(
+        'hello world', 
+        'UTF8_STRING_COMPLEX'
+        )
+    )
+);
+```
+IN statements require a list of values or a subquery. An array will not work in this situation.
+
+##### Sql JOIN statement
+```sql
+SELECT * 
+FROM user_data s 
+JOIN (
+    SELECT * 
+    FROM table(ubiq_encrypt_for_search_table(
+        'hello world', 
+        'UTF8_STRING_COMPLEX'
+        )
+    )
+) t ON s.encrypted_data = t.cipher_text;
+```
+
+##### Snowflake Sql ARRAY_CONTAINS statement
+```sql
+SELECT * 
+from user_data 
+WHERE 
+  ARRAY_CONTAINS (
+    encrypted_data :: variant, 
+    (SELECT ubiq_encrypt_for_search_array(
+        'hello world', 
+        'UTF8_STRING_COMPLEX'
+    ))
+  );
+
+```
+
+`ARRAY_CONTAINS` takes two arguments, `(VARIANT, ARRAY)`. Casting the encrypted data to a variant makes this work.
 
 ### Ending the Ubiq Session
 After encrypting/decrypting, you will need to call this function. This will guarantee the environment has been cleaned up and report usage information.
 ```sql
-call ubiq_close_fpe_session(
+call ubiq_close_session(
     access_key, 
     secret_signing_key
 )
@@ -161,16 +217,16 @@ call ubiq_close_fpe_session(
 
 
 -- warm up configuration and key cache
-call ubiq_begin_fpe_session('SSN', access_key, secret_signing_key, secret_crypto_access_key);
+call ubiq_begin_session('SSN', access_key, secret_signing_key, secret_crypto_access_key);
 
 select * from sample_ssns
 
 -- update column in table
-update sample_ssns set ssn_encrypted = ubiq_fpe_encrypt_cache(ssn_plaintext, 'SSN');
-update sample_ssns set ssn_decrypted = ubiq_fpe_decrypt_cache(ssn_encrypted, 'SSN');
+update sample_ssns set ssn_encrypted = ubiq_encrypt(ssn_plaintext, 'SSN');
+update sample_ssns set ssn_decrypted = ubiq_decrypt(ssn_encrypted, 'SSN');
 
 -- query data from table
-select id, ubiq_fpe_decrypt_cache(ssn_encrypted, 'SSN') from sample_ssns;
+select id, ubiq_decrypt(ssn_encrypted, 'SSN') from sample_ssns;
 
-call ubiq_close_fpe_session(access_key, secret_signing_key);
+call ubiq_close_session(access_key, secret_signing_key);
 ```
