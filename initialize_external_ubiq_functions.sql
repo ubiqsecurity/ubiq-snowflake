@@ -27,14 +27,6 @@ create or replace external function _ubiq_broker_fetch_key(access_key_id varchar
     returns variant
     api_integration = ubiq_broker_int
     as 'https://ubiq-api-broker.azure-api.net/ubiq-api-broker/fetch_key';
-create or replace external function _ubiq_broker_fetch_ffs(ffs_name varchar, access_key_id varchar, secret_signing_key varchar)
-    returns variant
-    api_integration = ubiq_broker_int
-    as 'https://ubiq-api-broker.azure-api.net/ubiq-api-broker/fetch_ffs';
-create or replace external function _ubiq_broker_fetch_fpe_key(ffs_name varchar, access_key_id varchar, secret_signing_key varchar)
-    returns variant
-    api_integration = ubiq_broker_int
-    as 'https://ubiq-api-broker.azure-api.net/ubiq-api-broker/fetch_fpe_key';
 create or replace external function _ubiq_broker_fetch_ffs_and_fpe_key(ffs_name varchar, access_key_id varchar, secret_signing_key varchar)
     returns variant
     api_integration = ubiq_broker_int
@@ -49,14 +41,6 @@ create or replace external function _ubiq_broker_fetch_key(access_key_id varchar
     returns variant
     api_integration = ubiq_broker_int
     as 'https://x02qdux9x9.execute-api.us-west-2.amazonaws.com/Production/fetch_key';
-create or replace external function _ubiq_broker_fetch_ffs(ffs_name varchar, access_key_id varchar, secret_signing_key varchar)
-    returns variant
-    api_integration = ubiq_broker_int
-    as 'https://x02qdux9x9.execute-api.us-west-2.amazonaws.com/Production/fetch_ffs';
-create or replace external function _ubiq_broker_fetch_fpe_key(ffs_name varchar, access_key_id varchar, secret_signing_key varchar)
-    returns variant
-    api_integration = ubiq_broker_int
-    as 'https://x02qdux9x9.execute-api.us-west-2.amazonaws.com/Production/fetch_fpe_key';
 create or replace external function _ubiq_broker_fetch_ffs_and_fpe_key(ffs_name varchar, access_key_id varchar, secret_signing_key varchar)
     returns variant
     api_integration = ubiq_broker_int
