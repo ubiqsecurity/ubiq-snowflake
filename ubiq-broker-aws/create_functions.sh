@@ -29,7 +29,7 @@ echo "folder created"
 pip install --target $package_dir --platform manylinux_2_12_x86_64 --implementation cp --python 3.10 --only-binary=:all: --upgrade cryptography
 pip install --target $package_dir -r requirements.txt --platform manylinux_2_12_x86_64 --implementation cp --python 3.10 --only-binary=:all:
 
-broker_fns=("fetch_ffs_and_fpe_key" "submit_events")
+broker_fns=("fetch_dataset_and_structured_key" "submit_events")
 
 for fn in "${broker_fns[@]}"
 do

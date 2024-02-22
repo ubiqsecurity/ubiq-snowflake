@@ -8,8 +8,8 @@ This repository contains the BETA version Ubiq broker function definition. The U
 The broker consists of the following endpoints:
 
 * _fetch_key:_ Consumes an access key ID and secret signing key and retrieves a new encrypted private key from the Ubiq API
-* _fetch_key_from_data:_ Consumes an access key ID, secret signing key and hex-encrypted data and retrieves the corresponding encrypted private key from the Ubiq API (this is useed during decrypt operations)
-* _fetch_ffs_and_fpe_key:_ Consumes an access key ID, secret signing key and field format specification (FFS) and retrieves the corresponding FFS metadata and encrypted private key from the Ubiq API
+* _fetch_key_from_data:_ Consumes an access key ID, secret signing key and hex-encrypted data and retrieves the corresponding encrypted private key from the Ubiq API (this is used during decrypt operations)
+* _fetch_dataset_and_structured_key:_ Consumes an access key ID, secret signing key and dataset and retrieves the corresponding dataset metadata and encrypted private key from the Ubiq API
 
 The Ubiq broker also supports caching of previously-retrieved encrypted private keys in an Azure-managed Redis cache.
 
@@ -117,10 +117,10 @@ create or replace external function _ubiq_broker_fetch_key_from_data(encrypted_d
     returns variant
     api_integration = ubiq_broker_int
     as '[Ubiq broker base URL]/fetch_key_from_data';
-create or replace external function _ubiq_broker_fetch_ffs_and_fpe_key(ffs_name varchar, access_key_id varchar, secret_signing_key varchar)
+create or replace external function _ubiq_broker_fetch_dataset_and_structured_key(dataset_name varchar, access_key_id varchar, secret_signing_key varchar)
     returns variant
     api_integration = ubiq_broker_int
-    as '[Ubiq broker base URL]/fetch_ffs_and_fpe_key';
+    as '[Ubiq broker base URL]/fetch_dataset_and_structured_key';
 create or replace external function _ubiq_broker_submit_events(events variant, access_key_id varchar, secret_signing_key varchar)
     returns variant
     api_integration = ubiq_broker_int

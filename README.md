@@ -94,9 +94,9 @@ The Client Library needs to be configured with your API Key Credentials which ar
 >These items SHOULD be stored in a secrets management server or password vault. They should NOT be stored in a standard data file, embedded in source code, committed to a source code repository, or insecurely used in environmental variables.
 
 ## Usage
-All Ubiq functions take as input the Ubiq secret crypto access key and the encrypted private key, along with other attributes returned from the respective Ubiq API endpoint. Encrypt functions expect plain text while decrypt functions expect encrypted data, which is binary data for standard decryption or cipher text for Format Preserving Encryption (FPE) decryption.  Additionally, FPE functions expect the Dataset names. Examples of each encrypt/decrypt UDF is provided below.
+All Ubiq functions take as input the Ubiq secret crypto access key and the encrypted private key, along with other attributes returned from the respective Ubiq API endpoint. Encrypt functions expect plain text while decrypt functions expect encrypted data, which is binary data for standard decryption or cipher text for Structured decryption.  Additionally, structured functions expect the Dataset names. Examples of each encrypt/decrypt UDF is provided below.
 
-### Format Preserving Encryption (FPE) Setup
+### Structured Encryption Setup
 Before running encryption/decryption operations, the database session will need to be initialized. This is done by calling the following procedure:
 ```sql
 CALL ubiq_begin_session(
@@ -108,11 +108,11 @@ CALL ubiq_begin_session(
 ```
 
 Arguments are defined as follows:
-* _dataset_names:_ The datasets to use FPE encryption with. Datasets should be accessible by the API Key. These should be in a single string, separated by commas. eg `'SSN,TELEPHONE_NUMBER,FULL_NAME'` 
+* _dataset_names:_ The datasets to use structured encryption with. Datasets should be accessible by the API Key. These should be in a single string, separated by commas. eg `'SSN,TELEPHONE_NUMBER,FULL_NAME'` 
 * _access_key, secret_signing_key, secret_crypto_access_key:_ Ubiq API Key Credentials available from the Ubiq Dashboard
 
-### FPE Encryption
-The below command performs FPE encryption by calling the Ubiq API to get Dataset metadata corresponding to the given Dataset name (e.g., 'SSN') and an FPE encryption key.
+### Structured Encryption
+The below command performs structured encryption by calling the Ubiq API to get Dataset metadata corresponding to the given Dataset name (e.g., 'SSN') and an encryption key.
 ```sql
 select ubiq_encrypt(
     plain_text, 
@@ -121,8 +121,8 @@ select ubiq_encrypt(
 from table
 ```
 
-### FPE Decryption
-The below command performs FPE decryption by calling the Ubiq API to get Dataset metadata corresponding to the given Dataset name (e.g., 'SSN') and an FPE encryption key. 
+### Structured Decryption
+The below command performs structured decryption by calling the Ubiq API to get Dataset metadata corresponding to the given Dataset name (e.g., 'SSN') and a corresponding key. 
 ```sql
 select ubiq_decrypt(
     cipher_text, 
@@ -131,13 +131,13 @@ select ubiq_decrypt(
 from table
 ```
 
-### FPE Encrypt for Search
+### Structured Encrypt for Search
 Encrypt For Search is a function set provided to search your database for a value that has been encrypted.
 
 #### Example
 There are two available functions:
-1. `ubiq_encrypt_for_search_array(plain_text varchar, ffs_name varchar)` - Returns an array representation, eg `['cipher text 1', 'cipher text 2', ...]`
-1. `ubiq_encrypt_for_search_table(plain_text varchar, ffs_name varchar)` - Returns a table representation with 1 column, `cipher_text`, where each row contains a separate cipher text. This is a **table function** and should be prefixed with `table()` when used in FROM and WHERE clauses.
+1. `ubiq_encrypt_for_search_array(plain_text varchar, dataset_name varchar)` - Returns an array representation, eg `['cipher text 1', 'cipher text 2', ...]`
+1. `ubiq_encrypt_for_search_table(plain_text varchar, dataset_name varchar)` - Returns a table representation with 1 column, `cipher_text`, where each row contains a separate cipher text. This is a **table function** and should be prefixed with `table()` when used in FROM and WHERE clauses.
 
 This gives you flexibility when searching to build the query that best suits your situation.
 
