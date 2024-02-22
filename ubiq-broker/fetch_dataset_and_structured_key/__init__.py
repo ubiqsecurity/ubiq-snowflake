@@ -57,7 +57,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         try:
             # Call Ubiq API to get the key
             ubiq_response = requests.get(
-                url=f"{UBIQ_API_URL}/fpe/def_keys?dataset_name={dataset_names}&papi={access_key}",
+                url=f"{UBIQ_API_URL}/fpe/def_keys?ffs_name={dataset_names}&papi={access_key}",
                 auth=http_auth(access_key, signing_key),
             )
         except Exception as e:
