@@ -9,43 +9,43 @@ create or replace function ubiq_get_encrypt_key("cache" object)
 returns object
 language javascript
 as '
-    for(const ffs_def in cache){
-        cache[ffs_def].keys = [cache[ffs_def].keys[cache[ffs_def].current_key_number]];
-        cache[ffs_def].current_key_only = true;
+    for(const dataset_def in cache){
+        cache[dataset_def].keys = [cache[dataset_def].keys[cache[dataset_def].current_key_number]];
+        cache[dataset_def].current_key_only = true;
     }
     
     return cache
 ';
 
-create or replace temporary table ubiq_ffs_cache (cache object);
+create or replace temporary table ubiq_cache (cache object);
 
-create or replace function ubiq_encrypt("plain_text" varchar, "ffs_name" varchar)
+create or replace function ubiq_encrypt("plain_text" varchar, "dataset_name" varchar)
 returns varchar
 language sql
 as
 $$
 select _ubiq_encrypt(
     plain_text,
-    ffs_name,
-    (select get_encrypt_key(cache) from ubiq_ffs_cache)
+    dataset_name,
+    (select get_encrypt_key(cache) from ubiq_cache)
 )
 $$;
 
 -- Returns an Array ['encrypted value 1', 'encrypted value 2', ...]
-create or replace function ubiq_encrypt_for_search_array("plain_text" varchar, "ffs_name" varchar)
+create or replace function ubiq_encrypt_for_search_array("plain_text" varchar, "dataset_name" varchar)
 returns array
 language sql
 as
 $$
 select _ubiq_encrypt_for_search_array(
     plain_text, 
-    ffs_name,
-    (select cache from ubiq_ffs_cache)
+    dataset_name,
+    (select cache from ubiq_cache)
 )
 $$
 
 -- Returns a multi-row table where each row is a separate encrypted value
-create or replace function ubiq_encrypt_for_search_table(plain_text varchar, ffs_name varchar)
+create or replace function ubiq_encrypt_for_search_table(plain_text varchar, dataset_name varchar)
 returns table (cipher_text varchar)
 as
 $$
@@ -54,37 +54,37 @@ from
     table(
         _ubiq_encrypt_for_search_table(
             plain_text, 
-            ffs_name, 
-            (select cache from ubiq_ffs_cache)
+            dataset_name, 
+            (select cache from ubiq_cache)
         )
     )
 $$;
 
-create or replace function ubiq_fpe_decrypt("cipher_text" varchar, "ffs_name" varchar)
+create or replace function ubiq_decrypt("cipher_text" varchar, "dataset_name" varchar)
 returns varchar
 language sql
 as
 $$
 select _ubiq_decrypt(
     cipher_text,
-    ffs_name,
-    (select cache from ubiq_ffs_cache)
+    dataset_name,
+    (select cache from ubiq_cache)
 )
 $$;
 
-drop table ubiq_ffs_cache;
+drop table ubiq_cache;
 
-create or replace procedure ubiq_begin_session("ffs_names" varchar)
+create or replace procedure ubiq_begin_session("dataset_names" varchar)
 returns varchar
 language javascript
 as
 $$
-    var sql = `create or replace temporary table ubiq_ffs_cache (cache object) as 
+    var sql = `create or replace temporary table ubiq_cache (cache object) as 
         select _ubiquser_data_fetch_data_key(
-            '${ffs_names}',
+            '${dataset_names}',
             (select secret_crypto_access_key from ubiq_creds),
-            (select _ubiq_broker_fetch_ffs_and_fpe_key( 
-                '${ffs_names}', 
+            (select _ubiq_broker_fetch_dataset_and_structured_key( 
+                '${dataset_names}', 
                 (select access_key_id from ubiq_creds), 
                 (select secret_signing_key from ubiq_creds)
             ))
@@ -99,18 +99,18 @@ $$
 $$;
 
 
--- Creates Cache with unwrapped keys; no Secret Crypto Key needed for enc/dec fpe cache functions.
-create or replace procedure ubiq_begin_session("ffs_name" varchar, "access_key" varchar, "secret_signing_key" varchar, "secret_crypto_access_key" varchar)
+-- Creates Cache with unwrapped keys; no Secret Crypto Key needed for enc/dec functions.
+create or replace procedure ubiq_begin_session("dataset_name" varchar, "access_key" varchar, "secret_signing_key" varchar, "secret_crypto_access_key" varchar)
 returns varchar
 language javascript
 as
 $$
-    var sql = `create or replace temporary table ubiq_ffs_cache (cache object) as 
+    var sql = `create or replace temporary table ubiq_cache (cache object) as 
         select _ubiquser_data_fetch_data_key(
-            '${ffs_name}',
+            '${dataset_name}',
             '${secret_crypto_access_key}',
-            (select _ubiq_broker_fetch_ffs_and_fpe_key( 
-                '${ffs_name}',
+            (select _ubiq_broker_fetch_dataset_and_structured_key( 
+                '${dataset_name}',
                 '${access_key}', 
                 '${secret_signing_key}'
             ))
@@ -189,7 +189,7 @@ $$
         '${SECRET_SIGNING_KEY}'
     )`})
 
-    // Drop the FFS cache
-    snowflake.execute({sqlText: `DROP TABLE IF EXISTS ubiq_ffs_cache;`});
+    // Drop the cache
+    snowflake.execute({sqlText: `DROP TABLE IF EXISTS ubiq_cache;`});
     return res;
 $$;

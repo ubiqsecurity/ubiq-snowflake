@@ -22,7 +22,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
         req_body = req.get_json()
     except Exception as e:
-        msg = "An exception occurred while parsing FFS request body contents as JSON"
+        msg = "An exception occurred while parsing request body contents as JSON"
         logging.exception(msg)
         return func.HttpResponse(format_error_response(msg), status_code=400)
 
@@ -72,7 +72,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 }).encode('utf-8')
         try:
             logging.info(f"Sending event data to ubiq")
-            # Call Ubiq API to get the FPE key
+            # Call Ubiq API to get the key
             ubiq_response = requests.post(
                 url=f"{UBIQ_API_URL}/tracking/events",
                 auth=http_auth(access_key, signing_key),
@@ -80,14 +80,14 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 data=data
             )
         except Exception as e:
-            msg = f"An exception occurred while calling Ubiq FPE API endpoint. {str(e)} -- Data Sent {data}"
+            msg = f"An exception occurred while calling Ubiq API endpoint. {str(e)} -- Data Sent {data}"
             logging.exception(msg)
             return func.HttpResponse(format_error_response(msg), status_code=500)
             
 
     logging.info("Events reported successfully")
 
-    # Transmit HTTP response with Ubiq-supplied FPE parameters
+    # Transmit HTTP response with Ubiq-supplied parameters
     # NOTE: Snowflake only recognizes status code 200 as a success indicator
     return func.HttpResponse(
         json.dumps({"data": [[0,"Success"]]}),

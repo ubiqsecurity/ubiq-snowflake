@@ -60,14 +60,14 @@ success = True
 
 try:
     # Load Session
-    cursor.execute("CALL ubiq_begin_fpe_session('BIRTH_DATE,SSN,ALPHANUM_SSN,UTF8_STRING_COMPLEX');")
+    cursor.execute("CALL ubiq_begin_session('BIRTH_DATE,SSN,ALPHANUM_SSN,UTF8_STRING_COMPLEX');")
 except Exception as ex:
-    print_exception('Begin FPE Session', ex)
+    print_exception('Begin Session', ex)
     
 
 try:
     # Perform Decrypt Load test
-    query = 'SELECT t.dataset, t.ciphertext, ubiq_fpe_encrypt_cache(t.plaintext, t.dataset) as encrypted, t.plaintext FROM ubiq_load_test t'
+    query = 'SELECT t.dataset, t.ciphertext, ubiq_encrypt(t.plaintext, t.dataset) as encrypted, t.plaintext FROM ubiq_load_test t'
     if EXEC_LIMIT:
         query = query + f' LIMIT {EXEC_LIMIT}'
     query = query + ';'
@@ -88,7 +88,7 @@ if not success:
     sys.exit(success)
 
 try:
-    query = 'SELECT t.dataset, t.plaintext, ubiq_fpe_decrypt_cache(t.ciphertext, t.dataset) as decrypted, t.ciphertext FROM ubiq_load_test t'
+    query = 'SELECT t.dataset, t.plaintext, ubiq_decrypt(t.ciphertext, t.dataset) as decrypted, t.ciphertext FROM ubiq_load_test t'
     if EXEC_LIMIT:
         query = query + f' LIMIT {EXEC_LIMIT}'
     query = query + ';'

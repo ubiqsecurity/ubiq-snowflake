@@ -12,7 +12,7 @@ from common import (
 )
 
 def lambda_handler(event, context):
-    logging.info("Received request to fetch Field Format Specification (FFS) and Format Preserving Encryption (FPE) key")
+    logging.info("Received request to fetch datasets and structured keys")
 
     try:
         if(isinstance(event,list) or isinstance(event, dict)):
@@ -20,7 +20,7 @@ def lambda_handler(event, context):
         else:
             req_body = json.loads(event)
     except Exception as e:
-        msg = "An exception occurred while parsing FFS request body contents as JSON"
+        msg = "An exception occurred while parsing request body contents as JSON"
         logging.exception(msg)
         return format_error_response(msg)
 
@@ -33,15 +33,15 @@ def lambda_handler(event, context):
 
     # List of response contents
     response_contents = []
-    ffs_name_list = []
+    dataset_name_list = []
 
-    # Extract FFS name, access key ID and secret signing key and query Ubiq API
-    for idx, ffs_names, access_key, signing_key in rows:
+    # Extract dataset name, access key ID and secret signing key and query Ubiq API
+    for idx, dataset_names, access_key, signing_key in rows:
 
-        logging.info(f"Processing row [{idx}] of fetch FPE key request")
+        logging.info(f"Processing row [{idx}] of fetch key request")
 
-        # Validate FFS name
-        if not isinstance(ffs_names, str):
+        # Validate dataset name
+        if not isinstance(dataset_names, str):
             msg = "Field Format Specification in request is malformed"
             logging.error(msg)
             return format_error_response(msg)
@@ -55,25 +55,25 @@ def lambda_handler(event, context):
             return format_error_response(str(e))
 
         try:
-            # Call Ubiq API to get the FPE key
+            # Call Ubiq API to get the key
             ubiq_response = requests.get(
-                url=f"{UBIQ_API_URL}/fpe/def_keys?ffs_name={ffs_names}&papi={access_key}",
+                url=f"{UBIQ_API_URL}/fpe/def_keys?ffs_name={dataset_names}&papi={access_key}",
                 auth=http_auth(access_key, signing_key),
             )
         except Exception as e:
-            msg = "An exception occurred while calling Ubiq FPE API endpoint"
+            msg = "An exception occurred while calling Ubiq API endpoint"
             logging.exception(msg)
             return format_error_response(msg)
 
         try:
-            # Parse contents of Ubiq FPE API response
-            contents = parse_ubiq_response(ubiq_response, ffs_names.split(','))
+            # Parse contents of Ubiq API response
+            contents = parse_ubiq_response(ubiq_response, dataset_names.split(','))
         except Exception as e:
             logging.exception(e)
             return format_error_response(str(e))
 
         response_contents.append(contents)
-    logging.info("Request to fetch FPE encryption key successful")
+    logging.info("Request to fetch encryption key successful")
 
     return {
         "data": [
