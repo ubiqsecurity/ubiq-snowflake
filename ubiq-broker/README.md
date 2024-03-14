@@ -1,5 +1,5 @@
-# Ubiq API - Snowflake Broker (BETA)
-This repository contains the BETA version Ubiq broker function definition. The Ubiq broker performs the following functions:
+# Ubiq API - Snowflake Broker
+This repository contains the Ubiq broker function definition. The Ubiq broker performs the following functions:
 
 1. Consumes REST request from Snowflake data platform
 2. Converts them to a format expected by the intended Ubiq API and queries the applicable Ubiq API
@@ -7,9 +7,8 @@ This repository contains the BETA version Ubiq broker function definition. The U
 
 The broker consists of the following endpoints:
 
-* _fetch_key:_ Consumes an access key ID and secret signing key and retrieves a new encrypted private key from the Ubiq API
-* _fetch_key_from_data:_ Consumes an access key ID, secret signing key and hex-encrypted data and retrieves the corresponding encrypted private key from the Ubiq API (this is used during decrypt operations)
 * _fetch_dataset_and_structured_key:_ Consumes an access key ID, secret signing key and dataset and retrieves the corresponding dataset metadata and encrypted private key from the Ubiq API
+* _submit_events:_ Submits events to Ubiq for usage metrics & billing
 
 The Ubiq broker also supports caching of previously-retrieved encrypted private keys in an Azure-managed Redis cache.
 
@@ -55,9 +54,9 @@ If you would like to create a revision to deploy to
 
 1. For the endpoint/function that is currently deployed, click the ellipsis (...) and click _Add revision_
 
-2. Provide some reviewsion/versioning notes
+2. Provide some revision/versioning notes
 
-3. To set it live, on the reveison just published, click the ellipsis (...) and click _Make current_
+3. To set it live, on the revision just published, click the ellipsis (...) and click _Make current_
 
 
 To use the new function updates/methods
@@ -109,14 +108,6 @@ describe api integration ubiq_broker_int;
 3. In a Snowflake worksheet, run the below commands to create external functions corresponding to the Ubiq broker endpoints. To obtain the Ubiq broker base URL, go to _All services_ within the Azure portal, find and click on _API Management services_, click _APIs_ and select the Ubiq broker API, click _Settings_ (top menubar) and copy the value of _Base URL_
 
 ```
-create or replace external function _ubiq_broker_fetch_key(access_key_id varchar, secret_signing_key varchar)
-    returns variant
-    api_integration = ubiq_broker_int
-    as '[Ubiq broker base URL]/fetch_key';
-create or replace external function _ubiq_broker_fetch_key_from_data(encrypted_data binary, access_key_id varchar, secret_signing_key varchar)
-    returns variant
-    api_integration = ubiq_broker_int
-    as '[Ubiq broker base URL]/fetch_key_from_data';
 create or replace external function _ubiq_broker_fetch_dataset_and_structured_key(dataset_name varchar, access_key_id varchar, secret_signing_key varchar)
     returns variant
     api_integration = ubiq_broker_int

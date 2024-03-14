@@ -1,5 +1,5 @@
 # Ubiq API - Snowflake Broker
-This repository contains the BETA version Ubiq broker function definition. The Ubiq broker performs the following functions:
+This repository contains the Ubiq broker function definition. The Ubiq broker performs the following functions:
 
 1. Consumes REST request from Snowflake data platform
 2. Converts them to a format expected by the intended Ubiq API and queries the applicable Ubiq API
@@ -7,9 +7,8 @@ This repository contains the BETA version Ubiq broker function definition. The U
 
 The broker consists of the following endpoints:
 
-* _fetch_key:_ Consumes an access key ID and secret signing key and retrieves a new encrypted private key from the Ubiq API
-* _fetch_key_from_data:_ Consumes an access key ID, secret signing key and hex-encrypted data and retrieves the corresponding encrypted private key from the Ubiq API (this is useed during decrypt operations)
 * _fetch_dataset_and_structured_key: Consumes an access key ID, secret signing key and dataset and retrieves the corresponding metadata and encrypted private keys from the Ubiq API
+* _submit_events:_ Submits events to Ubiq for usage metrics & billing
 
 ## AWS (Lambda) Function Deployment and Configuration
 Execute the following steps to deploy the Ubiq broker function to AWS. (To be performed by a UBIQ Employee)
@@ -54,14 +53,6 @@ Look for the property named API_AWS_IAM_USER_ARN and API_AWS_EXTERNAL_ID. Provid
 3. In a Snowflake worksheet, run the below commands to create external functions corresponding to the Ubiq broker endpoints.  The Ubiq Broker Base API URL can be found by visiting API Gateway service. Click _Stages_, select the appropriate stage, then this will be _Invoke URL_ at the top of the page.
 
 ```
-create or replace external function _ubiq_broker_fetch_key(access_key_id varchar, secret_signing_key varchar)
-    returns variant
-    api_integration = ubiq_broker_int
-    as '[Ubiq broker base URL]/fetch_key';
-create or replace external function _ubiq_broker_fetch_key_from_data(encrypted_data binary, access_key_id varchar, secret_signing_key varchar)
-    returns variant
-    api_integration = ubiq_broker_int
-    as '[Ubiq broker base URL]/fetch_key_from_data';
 create or replace external function _ubiq_broker_fetch_dataset_and_structured_key(dataset_name varchar, access_key_id varchar, secret_signing_key varchar)
     returns variant
     api_integration = ubiq_broker_int
