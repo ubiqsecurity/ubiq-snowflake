@@ -36,7 +36,7 @@ do
     # create archive and upload function
     (cd $package_dir; zip -r ../${fn}_deploy.zip .)
     (cd $fn; zip -r ../${fn}_deploy.zip .)
-    zip -r $fn_deploy.zip common
+    zip -r ${fn}_deploy.zip common
 
     # Check if function exists
     aws lambda get-function --function-name $fn --region $aws_region --profile $aws_profile > /dev/null 2>&1
