@@ -5,7 +5,7 @@ create or replace table ubiq_creds (
 );
 
 
-create or replace function ubiq_get_encrypt_key("cache" object)
+create or replace function _ubiq_get_encrypt_key("cache" object)
 returns object
 language javascript
 as '
@@ -27,7 +27,7 @@ $$
 select _ubiq_encrypt(
     plain_text,
     dataset_name,
-    (select ubiq_get_encrypt_key(cache) from ubiq_cache)
+    (select _ubiq_get_encrypt_key(cache) from ubiq_cache)
 )
 $$;
 
