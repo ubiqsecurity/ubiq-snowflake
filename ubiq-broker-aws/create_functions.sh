@@ -1,12 +1,23 @@
 #!/bin/bash
+# You can now pass these prompted variables as env variables. It only asks if missing.
 
-read -p "AWS Profile Name (default: default): " aws_profile
-aws_profile=${aws_profile:-default}
+if [ -z $aws_profile ]
+then
+    read -p "AWS Profile Name (default: default): " aws_profile
+    aws_profile=${aws_profile:-default}
+fi
 
 aws_region=$(eval "aws configure get region")
-aws_profile=${aws_profile:-"us-west-2"}
+if [ -z $aws_region ]
+then
+    read -p "AWS Region? (us-west-2) " aws_region
+    aws_region=${aws_region:-"us-west-2"}
+fi
 
-read -p "Lambda Execution Role? (arn:aws:iam...) " aws_role
+if [ -z $aws_role ]
+then
+    read -p "Lambda Execution Role? (arn:aws:iam...) " aws_role
+fi
 
 # Grab python pacakages to be included in the archive
 package_dir="package"
@@ -43,7 +54,7 @@ do
     if [ 0 -eq $? ]; then
         echo $?
         echo "Updating function ${fn}"
-        aws lambda update-function-code --function-name $fn --zip-file fileb://$fn_deploy.zip --region $aws_region --profile $aws_profile
+        aws lambda update-function-code --function-name $fn --zip-file fileb://${fn}_deploy.zip --region $aws_region --profile $aws_profile
     else
         echo $?
         if [ -z "$aws_role" ]; then
@@ -51,7 +62,7 @@ do
             exit 1
         else 
             echo "Creating function ${fn}"
-            aws lambda create-function --function-name $fn --zip-file fileb://$fn_deploy.zip --region $aws_region --profile $aws_profile --role $aws_role --runtime 'python3.10' --handler 'lambda_function.lambda_handler'
+            aws lambda create-function --function-name $fn --zip-file fileb://${fn}_deploy.zip --region $aws_region --profile $aws_profile --role $aws_role --runtime 'python3.10' --handler 'lambda_function.lambda_handler'
         fi
     fi
 done

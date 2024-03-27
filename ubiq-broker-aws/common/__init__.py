@@ -130,7 +130,10 @@ def format_error_response(error_msg: str) -> str:
         Reformatted response to match format expected by Snowflake external
         functions.
     """
-    return {"data": [[0, error_msg]]}
+    return {
+            "status": 401, 
+            "body": json.dumps({"data": [[0, error_msg]]})
+        }
 
 
 def format_response(contents: List[Dict[str, Any]], params: List[str]) -> str:
@@ -148,8 +151,10 @@ def format_response(contents: List[Dict[str, Any]], params: List[str]) -> str:
         functions.
     """
     return {
+        "status": 200,
+        "body": json.dumps({
             "data": [
                 [idx, {param: contents[param] for param in params}]
                 for idx, contents in enumerate(contents)
-            ]
+            ]})
         }
