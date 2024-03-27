@@ -16,9 +16,15 @@ def lambda_handler(event, context):
 
     try:
         if(isinstance(event,list) or isinstance(event, dict)):
-            req_body = event;
+            if 'body' in event:
+                # Snowflake sends a request with the body stringified
+                req_body = json.loads(event['body'])
+            else:
+                # API Gateway doesn't send the full request as the event
+                req_body = event
         else:
-            req_body = json.loads(event)
+            json_event = json.loads(event)
+            req_body = json_event['body']
     except Exception as e:
         msg = "An exception occurred while parsing request body contents as JSON"
         logging.exception(msg)
@@ -76,7 +82,6 @@ def lambda_handler(event, context):
     logging.info("Request to fetch encryption key successful")
 
     return {
-        "data": [
-            [0,response_contents[0]]
-        ]
-    }
+        "statusCode": 200, 
+        "body": json.dumps({"data": [[0, response_contents[0]]]})
+        }
