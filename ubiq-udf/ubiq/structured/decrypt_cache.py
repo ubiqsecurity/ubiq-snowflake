@@ -21,8 +21,9 @@ class DecryptionWithCache:
         pth = self._dataset['passthrough']
         ics = self._dataset['input_character_set']
         ocs = self._dataset['output_character_set']
+        rules = self._dataset.get('passthrough_rules', [])
 
-        fmt, ct = fmtInput(ct, pth, ocs, ics)
+        fmt, ct, rules = fmtInput(ct, pth, ocs, ics, rules)
         ct, n = decKeyNumber(ct, ocs, self._dataset['msb_encoding_bits'])
 
         key = base64.b64decode(self._cache['keys'][n])
@@ -41,7 +42,7 @@ class DecryptionWithCache:
 
         pt = self._ctx.Decrypt(ct, twk)
 
-        return fmtOutput(fmt, pt, pth)
+        return fmtOutput(fmt, pt, pth, rules)
 
 def DecryptCache(
     dataset_name: str, 

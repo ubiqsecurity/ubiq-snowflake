@@ -42,8 +42,16 @@ class EncryptionWithCache:
         pth = self._dataset['passthrough']
         ics = self._dataset['input_character_set']
         ocs = self._dataset['output_character_set']
+        rules = self._dataset.get('passthrough_rules', [])
 
-        fmt, pt = fmtInput(pt, pth, ics, ocs)
+        input_min = self._dataset['min_input_length']
+        input_max = self._dataset['max_input_length']
+
+        fmt, pt, rules = fmtInput(pt, pth, ics, ocs, rules)
+
+        input_len = len(pt)
+        if input_len < input_min or input_len > input_max:
+            raise RuntimeError('Invalid input len (%s) min: %s max %s'%(input_len, input_min, input_max))
 
         ct = self._algo.Encrypt(pt, twk)
 
@@ -51,7 +59,7 @@ class EncryptionWithCache:
         ct = encKeyNumber(ct, ocs,
                           self._key['key_number'],
                           self._dataset['msb_encoding_bits'])
-        return fmtOutput(fmt, ct, pth)
+        return fmtOutput(fmt, ct, pth, rules)
     
     def CipherForSearch(self, pt, twk=None) -> list:
         if self._cache.get('current_key_only'):
@@ -60,8 +68,17 @@ class EncryptionWithCache:
         pth = self._dataset['passthrough']
         ics = self._dataset['input_character_set']
         ocs = self._dataset['output_character_set']
-        fmt, pt = fmtInput(pt, pth, ics, ocs)
+        rules = self._dataset.get('passthrough_rules', [])
 
+        input_min = self._dataset['min_input_length']
+        input_max = self._dataset['max_input_length']
+
+        fmt, pt, rules = fmtInput(pt, pth, ics, ocs, rules)
+
+        input_len = len(pt)
+        if input_len < input_min or input_len > input_max:
+            raise RuntimeError('Invalid input len (%s) min: %s max %s'%(input_len, input_min, input_max))
+        
         searchCipher = []
         for key_num, key in enumerate(self._cache['keys']):
             algo = ff1.Context(
@@ -73,7 +90,7 @@ class EncryptionWithCache:
             ct = algo.Encrypt(pt, twk)
             ct = strConvertRadix(ct, ics, ocs)
             ct = encKeyNumber(ct, ocs, key_num, self._dataset['msb_encoding_bits'])
-            searchCipher.append(fmtOutput(fmt, ct, pth))
+            searchCipher.append(fmtOutput(fmt, ct, pth, rules))
 
         return searchCipher
 
