@@ -8,7 +8,7 @@ import requests.auth
 import time
 import urllib.parse
 
-VERSION = "1.0.8"
+VERSION = "2.2.0"
 
 class http_auth(requests.auth.AuthBase):
     """HTTP Authentication for the Ubiq Platform
@@ -42,7 +42,7 @@ class http_auth(requests.auth.AuthBase):
         necessary. The modified request is returned.
         """
 
-        r.headers['User-Agent'] = 'ubiq-python/' + VERSION
+        r.headers['User-Agent'] = 'ubiq-snowflake/' + VERSION
 
         # the '(request-target)' is part of the signed data.
         # it's value is 'http_method path?query'
