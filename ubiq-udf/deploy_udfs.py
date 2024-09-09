@@ -8,6 +8,17 @@ from typing import Dict
 import ubiq
 import ubiq.structured as ubiq_structured
 
+WRAP_EXCEPTIONS = True
+HANDLE_EXCEPTIONS = True
+
+def handle_exceptions(e, input):
+    if HANDLE_EXCEPTIONS:
+        return input
+    else:
+        if WRAP_EXCEPTIONS:
+            if hasattr(e, 'message'):
+                raise Exception(f"{type(e).__name__}: {e.message}")
+        raise e
 
 def deploy_functions(
     account: str,
@@ -220,9 +231,13 @@ def ubiq_encrypt(
     Returns:
         Encrypted cipher text for the given plain-text string.
     """
-    return ubiq_structured.EncryptCache(
-        dataset_name, ubiq_cache, plain_text
-    )
+    try:    
+        result = ubiq_structured.EncryptCache(
+            dataset_name, ubiq_cache, plain_text
+        )
+        return result
+    except Exception as e:
+        return handle_exceptions(e, plain_text)
 
 
 def ubiq_encrypt_for_search(
@@ -244,9 +259,13 @@ def ubiq_encrypt_for_search(
     Returns:
         A list of encrypted cipher texts for the given plain-text string
     """
-    return ubiq_structured.EncryptForSearchCache(
-        dataset_name, ubiq_cache, plain_text
-    )
+    try:
+        result = ubiq_structured.EncryptForSearchCache(
+            dataset_name, ubiq_cache, plain_text
+        )
+        return result
+    except Exception as e:
+        return handle_exceptions(e, plain_text)
 
 
 class EncryptForSearch:
@@ -280,9 +299,13 @@ def ubiq_decrypt(
     Returns:
         Decrypted plain-text for the given cipher text string.
     """
-    return ubiq_structured.DecryptCache(
-        dataset_name, ubiq_cache, cipher_text
-    )
+    try:
+        result = ubiq_structured.DecryptCache(
+            dataset_name, ubiq_cache, cipher_text
+        )
+        return result
+    except Exception as e:
+        return handle_exceptions(e, cipher_text)
 
 
 def ubiq_encrypt_batch(
@@ -301,11 +324,15 @@ def ubiq_encrypt_batch(
     Returns:
         Encrypted cipher text for the given plain-text string.
     """
-    return pd.Series(
-        ubiq_structured.EncryptCacheBatch(
-            df[1].iloc[0], df[2].iloc[0], df[3].iloc[0], df[0])
-    )
-
+    
+    try:
+        result = pd.Series(
+            ubiq_structured.EncryptCacheBatch(
+                df[1].iloc[0], df[2].iloc[0], df[3].iloc[0], df[0])
+        )
+        return result
+    except Exception as e:
+        return handle_exceptions(e, df[3].iloc[0])
 
 def ubiq_decrypt_batch(
     df: PandasDataFrame[str, str, str, Dict],
@@ -324,10 +351,14 @@ def ubiq_decrypt_batch(
     Returns:
         Decrypted plain-text for the given cipher text string.
     """
-    return pd.Series(
-        ubiq_structured.DecryptCacheBatch(
-            df[1].iloc[0], df[2].iloc[0], df[3].iloc[0], df[0])
-    )
+    try:
+        result =  pd.Series(
+            ubiq_structured.DecryptCacheBatch(
+                df[1].iloc[0], df[2].iloc[0], df[3].iloc[0], df[0])
+        )
+        return result
+    except Exception as e:
+        return handle_exceptions(e, df[3].iloc[0])
 
 
 if __name__ == "__main__":

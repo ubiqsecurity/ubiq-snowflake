@@ -14,6 +14,14 @@ from common import (
     UBIQ_API_URL
 )
 
+def handle_error(response):
+    if isinstance(response, requests.Response):
+        return func.HttpResponse(format_error_response(f"An exception occurred while calling Ubiq Structured Encryption Key API endpoint ({response.status_code}): {response.text} "), status_code=response.status_code)
+    elif isinstance(response, Exception):
+        return func.HttpResponse(format_error_response(str(e), status_code=500))
+    else:
+        return func.HttpResponse(format_error_response(f"An exception occurred while calling Ubiq Structured Encryption Key API endpoint."), status_code=500)
+
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info("Received request to fetch dataset and structured encryption key")
 
@@ -61,16 +69,15 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 auth=http_auth(access_key, signing_key),
             )
         except Exception as e:
-            msg = "An exception occurred while calling Ubiq Structured Encryption Key API endpoint"
-            logging.exception(msg)
-            return func.HttpResponse(format_error_response(msg), status_code=500)
+            return handle_error(e)
 
         try:
             # Parse contents of Ubiq API response
+            if ubiq_response.status_code != 200:
+                return handle_error(ubiq_response)
             contents = parse_ubiq_response(ubiq_response, dataset_names.split(','))
         except Exception as e:
-            logging.exception(e)
-            return func.HttpResponse(format_error_response(str(e)), status_code=500)
+            return handle_error(e)
 
         response_contents.append(contents)
     logging.info("Request to fetch encryption key successful")
