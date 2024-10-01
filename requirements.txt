@@ -2,3 +2,4 @@ fire>=0.5
 pandas==1.4
 snowflake-snowpark-python>=1.0
 snowflake-connector-python>=2.7
+numpy<2

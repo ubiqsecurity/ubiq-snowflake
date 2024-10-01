@@ -80,33 +80,8 @@ Arguments are defined as follows:
 The below command performs structured encryption by calling the Ubiq API to get Dataset metadata corresponding to the given Dataset name (e.g., 'SSN') and an encryption key.
 ```sql
 select ubiq.ubiq_encrypt(
-    plain_text, 
-    dataset_name
-)
-from table
-```
-
-The below command calls the encryption function directly; it expects that the encryption key and Dataset metadata are cached locally and provided as arguments to the function.
-```sql
-select ubiq._ubiq_encrypt(    
-    plain_text,
-    'secret crypto access key',
-    {
-        'name': 'SSN'
-        'encryption_algorithm': '...',
-        'passthrough': '...',
-        'input_character_set': '...',
-        'output_character_set': '...',
-        'msb_encoding_bits': '...',
-        'tweak': '...',
-        'tweak_min_len': '...',
-        'tweak_max_len': '...'
-    },
-    {
-        'encrypted_private_key': '...',
-        'wrapped_data_key': '...',
-        'key_number': 0
-    }
+    dataset_name,
+    plain_text
 )
 from table
 ```
@@ -115,33 +90,8 @@ from table
 The below command performs structured decryption by calling the Ubiq API to get Dataset metadata corresponding to the given Dataset name (e.g., 'SSN') and an encryption key. 
 ```sql
 select ubiq.ubiq_decrypt(
-    cipher_text, 
-    dataset_name
-)
-from table
-```
-
-The below command calls the decryption function directly; it expects that the encryption key and Dataset metadata are cached locally and provided as arguments to the function.
-```sql
-select ubiq._ubiq_decrypt(
-    cipher_text,
-    'secret crypto access key',
-    {
-        'name': 'SSN'
-        'encryption_algorithm': '...',
-        'passthrough': '...',
-        'input_character_set': '...',
-        'output_character_set': '...',
-        'msb_encoding_bits': '...',
-        'tweak': '...',
-        'tweak_min_len': '...',
-        'tweak_max_len': '...'
-    },
-    {
-        'encrypted_private_key': '...',
-        'wrapped_data_key': '...',
-        'key_number': 0
-    }
+    dataset_name,
+    cipher_text
 )
 from table
 ```
@@ -180,11 +130,11 @@ call ubiq_begin_session('SSN', access_key, secret_signing_key, secret_crypto_acc
 select * from sample_ssns
 
 -- update column in table
-update sample_ssns set ssn_encrypted = ubiq_encrypt(ssn_plaintext, 'SSN');
-update sample_ssns set ssn_decrypted = ubiq_decrypt(ssn_encrypted, 'SSN');
+update sample_ssns set ssn_encrypted = ubiq_encrypt('SSN',ssn_plaintext);
+update sample_ssns set ssn_decrypted = ubiq_decrypt('SSN',ssn_encrypted);
 
 -- query data from table
-select id, ubiq_decrypt(ssn_encrypted, 'SSN') from sample_ssns;
+select id, ubiq_decrypt('SSN',ssn_encrypted) from sample_ssns;
 
 call ubiq_close_session(access_key, secret_signing_key);
 ```

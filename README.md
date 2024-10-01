@@ -115,8 +115,8 @@ Arguments are defined as follows:
 The below command performs structured encryption by calling the Ubiq API to get Dataset metadata corresponding to the given Dataset name (e.g., 'SSN') and an encryption key.
 ```sql
 select ubiq_encrypt(
-    plain_text, 
-    dataset_name
+    dataset_name,
+    plain_text
 )
 from table
 ```
@@ -125,8 +125,8 @@ from table
 The below command performs structured decryption by calling the Ubiq API to get Dataset metadata corresponding to the given Dataset name (e.g., 'SSN') and a corresponding key. 
 ```sql
 select ubiq_decrypt(
-    cipher_text, 
-    dataset_name
+    dataset_name,
+    cipher_text 
 )
 from table
 ```
@@ -136,8 +136,8 @@ Encrypt For Search is a function set provided to search your database for a valu
 
 #### Example
 There are two available functions:
-1. `ubiq_encrypt_for_search_array(plain_text varchar, dataset_name varchar)` - Returns an array representation, eg `['cipher text 1', 'cipher text 2', ...]`
-1. `ubiq_encrypt_for_search_table(plain_text varchar, dataset_name varchar)` - Returns a table representation with 1 column, `cipher_text`, where each row contains a separate cipher text. This is a **table function** and should be prefixed with `table()` when used in FROM and WHERE clauses.
+1. `ubiq_encrypt_for_search_array(dataset_name varchar, plain_text varchar)` - Returns an array representation, eg `['cipher text 1', 'cipher text 2', ...]`
+1. `ubiq_encrypt_for_search_table(dataset_name varchar, plain_text varchar)` - Returns a table representation with 1 column, `cipher_text`, where each row contains a separate cipher text. This is a **table function** and should be prefixed with `table()` when used in FROM and WHERE clauses.
 
 This gives you flexibility when searching to build the query that best suits your situation.
 
@@ -149,8 +149,8 @@ FROM user_data
 WHERE encrypted_data IN (
     SELECT * 
     FROM table(ubiq_encrypt_for_search_table(
-        'hello world', 
-        'UTF8_STRING_COMPLEX'
+        'UTF8_STRING_COMPLEX',
+        'hello world' 
         )
     )
 );
@@ -164,8 +164,8 @@ FROM user_data s
 JOIN (
     SELECT * 
     FROM table(ubiq_encrypt_for_search_table(
-        'hello world', 
-        'UTF8_STRING_COMPLEX'
+        'UTF8_STRING_COMPLEX',
+        'hello world' 
         )
     )
 ) t ON s.encrypted_data = t.cipher_text;
@@ -179,8 +179,8 @@ WHERE
   ARRAY_CONTAINS (
     encrypted_data :: variant, 
     (SELECT ubiq_encrypt_for_search_array(
-        'hello world', 
-        'UTF8_STRING_COMPLEX'
+        'UTF8_STRING_COMPLEX',
+        'hello world'
     ))
   );
 
@@ -222,11 +222,11 @@ call ubiq_begin_session('SSN', access_key, secret_signing_key, secret_crypto_acc
 select * from sample_ssns
 
 -- update column in table
-update sample_ssns set ssn_encrypted = ubiq_encrypt(ssn_plaintext, 'SSN');
-update sample_ssns set ssn_decrypted = ubiq_decrypt(ssn_encrypted, 'SSN');
+update sample_ssns set ssn_encrypted = ubiq_encrypt('SSN',ssn_plaintext);
+update sample_ssns set ssn_decrypted = ubiq_decrypt('SSN',ssn_encrypted);
 
 -- query data from table
-select id, ubiq_decrypt(ssn_encrypted, 'SSN') from sample_ssns;
+select id, ubiq_decrypt('SSN',ssn_encrypted) from sample_ssns;
 
 call ubiq_close_session(access_key, secret_signing_key);
 ```
