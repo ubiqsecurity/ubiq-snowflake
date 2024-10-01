@@ -19,33 +19,33 @@ as '
 
 create or replace temporary table ubiq_cache (cache object);
 
-create or replace function ubiq_encrypt("plain_text" varchar, "dataset_name" varchar)
+create or replace function ubiq_encrypt("dataset_name" varchar, "plain_text" varchar)
 returns varchar
 language sql
 as
 $$
 select _ubiq_encrypt(
-    plain_text,
     dataset_name,
+    plain_text,
     (select _ubiq_get_encrypt_key(cache) from ubiq_cache)
 )
 $$;
 
 -- Returns an Array ['encrypted value 1', 'encrypted value 2', ...]
-create or replace function ubiq_encrypt_for_search_array("plain_text" varchar, "dataset_name" varchar)
+create or replace function ubiq_encrypt_for_search_array("dataset_name" varchar, "plain_text" varchar)
 returns array
 language sql
 as
 $$
 select _ubiq_encrypt_for_search_array(
-    plain_text, 
     dataset_name,
+    plain_text, 
     (select cache from ubiq_cache)
 )
 $$;
 
 -- Returns a multi-row table where each row is a separate encrypted value
-create or replace function ubiq_encrypt_for_search_table(plain_text varchar, dataset_name varchar)
+create or replace function ubiq_encrypt_for_search_table("dataset_name" varchar, "plain_text" varchar)
 returns table (cipher_text varchar)
 as
 $$
@@ -53,50 +53,26 @@ select *
 from 
     table(
         _ubiq_encrypt_for_search_table(
-            plain_text, 
             dataset_name, 
+            plain_text, 
             (select cache from ubiq_cache)
         )
     )
 $$;
 
-create or replace function ubiq_decrypt("cipher_text" varchar, "dataset_name" varchar)
+create or replace function ubiq_decrypt("dataset_name" varchar, "cipher_text" varchar)
 returns varchar
 language sql
 as
 $$
 select _ubiq_decrypt(
-    cipher_text,
     dataset_name,
+    cipher_text,
     (select cache from ubiq_cache)
 )
 $$;
 
 drop table ubiq_cache;
-
-create or replace procedure ubiq_begin_session("dataset_names" varchar)
-returns varchar
-language javascript
-as
-$$
-    var sql = `create or replace temporary table ubiq_cache (cache object) as 
-        select _ubiq_fetch_data_key(
-            '${dataset_names}',
-            (select secret_crypto_access_key from ubiq_creds),
-            (select _ubiq_broker_fetch_dataset_and_structured_key( 
-                '${dataset_names}', 
-                (select access_key_id from ubiq_creds), 
-                (select secret_signing_key from ubiq_creds)
-            ))
-        );`
-    try {
-        snowflake.execute({sqlText: sql});
-        return "succeeded"
-    }
-    catch (err) {
-        return "failed: " + err;
-    }
-$$;
 
 
 -- Creates Cache with unwrapped keys; no Secret Crypto Key needed for enc/dec functions.

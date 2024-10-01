@@ -213,8 +213,8 @@ Users should use cache rather than passing/pulling at run time
 
 
 def ubiq_encrypt(
-    plain_text: str,
     dataset_name: str,
+    plain_text: str,
     ubiq_cache: Dict,
 ) -> str:
     """
@@ -241,8 +241,8 @@ def ubiq_encrypt(
 
 
 def ubiq_encrypt_for_search(
-    plain_text: str,
     dataset_name: str,
+    plain_text: str,
     ubiq_cache: Dict,
 ) -> list:
     """
@@ -270,8 +270,8 @@ def ubiq_encrypt_for_search(
 
 class EncryptForSearch:
     def process(self,
-                plain_text: str,
                 dataset_name: str,
+                plain_text: str,
                 ubiq_cache: Dict) -> Iterable[Tuple[str]]:
         res = ubiq_structured.EncryptForSearchCache(
             dataset_name, ubiq_cache, plain_text
@@ -281,8 +281,8 @@ class EncryptForSearch:
 
 
 def ubiq_decrypt(
-    cipher_text: str,
     dataset_name: str,
+    cipher_text: str,
     ubiq_cache: Dict,
 ) -> str:
     """
