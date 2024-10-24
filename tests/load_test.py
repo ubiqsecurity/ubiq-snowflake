@@ -34,6 +34,11 @@ WAREHOUSE = os.getenv('SNOWSQL_WAREHOUSE')
 DATABASE = os.getenv('SNOWSQL_DATABASE')
 SCHEMA = os.getenv('SNOWSQL_SCHEMA')
 
+# Ubiq Credentials
+UBIQ_ACCESS_KEY_ID = os.getenv('UBIQ_ACCESS_KEY_ID')
+UBIQ_SECRET_SIGNING_KEY = os.getenv('UBIQ_SECRET_SIGNING_KEY')
+UBIQ_SECRET_CRYPTO_ACCESS_KEY = os.getenv('UBIQ_SECRET_CRYPTO_ACCESS_KEY')
+
 # Pull Thresholds
 MAX_ENCRYPT=os.getenv('MAX_ENCRYPT')
 MAX_DECRYPT=os.getenv('MAX_DECRYPT')
@@ -60,7 +65,7 @@ success = True
 
 try:
     # Load Session
-    cursor.execute("CALL ubiq_begin_session('BIRTH_DATE,SSN,ALPHANUM_SSN,UTF8_STRING_COMPLEX');")
+    cursor.execute(f"CALL ubiq_begin_session('BIRTH_DATE,SSN,ALPHANUM_SSN,UTF8_STRING_COMPLEX', '{UBIQ_ACCESS_KEY_ID}', '{UBIQ_SECRET_SIGNING_KEY}', '{UBIQ_SECRET_CRYPTO_ACCESS_KEY}');")
 except Exception as ex:
     print_exception('Begin Session', ex)
     
