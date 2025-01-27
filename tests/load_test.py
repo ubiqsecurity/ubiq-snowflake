@@ -66,6 +66,9 @@ success = True
 try:
     # Load Session
     cursor.execute(f"CALL ubiq_begin_session('BIRTH_DATE,SSN,UTF8_STRING_COMPLEX,ALPHANUM_SSN,UTF8_STRING_COMPLEX_pass_suf,SSN_pre_pass,UTF8_STRING_COMPLEX_pre_pass,SSN_suf_pass_pre,UTF8_STRING_COMPLEX_suf_pre_pass,SSN_pre_suf_pass,SSN_pass_suf,UTF8_STRING_COMPLEX_pass_pre', '{UBIQ_ACCESS_KEY_ID}', '{UBIQ_SECRET_SIGNING_KEY}', '{UBIQ_SECRET_CRYPTO_ACCESS_KEY}');")
+    # Show the result because failure won't throw an exception.
+    for (result) in cursor:
+        print(f'Begin result: {result}')
 except Exception as ex:
     print_exception('Begin Session', ex)
     
@@ -103,7 +106,7 @@ try:
         if (not plaintext == decrypted):
             valid = False
         if(not valid):
-            print(f'Encrypt failure, mismatch found: ciphertext: {ciphertext} | plaintext: {plaintext} | decrypted: {decrypted}')
+            print(f'Decrypt failure, mismatch found: ciphertext: {ciphertext} | plaintext: {plaintext} | decrypted: {decrypted}')
             break
     # Save query ID to retrieve Results
     decrypt_query_id = cursor.sfqid
