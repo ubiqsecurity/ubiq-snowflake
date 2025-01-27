@@ -65,7 +65,7 @@ success = True
 
 try:
     # Load Session
-    cursor.execute(f"CALL ubiq_begin_session('BIRTH_DATE,SSN,ALPHANUM_SSN,UTF8_STRING_COMPLEX', '{UBIQ_ACCESS_KEY_ID}', '{UBIQ_SECRET_SIGNING_KEY}', '{UBIQ_SECRET_CRYPTO_ACCESS_KEY}');")
+    cursor.execute(f"CALL ubiq_begin_session('BIRTH_DATE,SSN,UTF8_STRING_COMPLEX,ALPHANUM_SSN,UTF8_STRING_COMPLEX_pass_suf,SSN_pre_pass,UTF8_STRING_COMPLEX_pre_pass,SSN_suf_pass_pre,UTF8_STRING_COMPLEX_suf_pre_pass,SSN_pre_suf_pass,SSN_pass_suf,UTF8_STRING_COMPLEX_pass_pre', '{UBIQ_ACCESS_KEY_ID}', '{UBIQ_SECRET_SIGNING_KEY}', '{UBIQ_SECRET_CRYPTO_ACCESS_KEY}');")
 except Exception as ex:
     print_exception('Begin Session', ex)
     
